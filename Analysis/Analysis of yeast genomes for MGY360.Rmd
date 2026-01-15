@@ -64,22 +64,20 @@ exit 0
 Output: Individual FASTQC reports. Share with class on GitHub.
 Output: MultiQC report summary (fastQC_multiqc_report.html). Look at plots in the HTML to assess overall quality. 
 
-**Conclusions:** Look good in general. 
+**Conclusions:**  
 
-Quality across reads: Uniformly high. Drops into "yellow" at ends of all reads, but expected with 150bp read length. 
-Quality averaged per read: High. Most 30+
-Sequence bias: As always, all samples have sequence composition bias at the start of reads, as per usual for Tn5. Nothing of concern here.
-GC content: Correct for yeast genome average.
-N content: None to speak of. Good sequencing run. No dead flow cell spots.
-Seq length: All 150, as expected
-Seq duplication: Generally pretty good. A few libraries are going to lose a fair chunk of their reads to this, but should still have enough to call vars
-Adapter content: Only a few managed to stay in the green zone. Everyone pretty much has approx 10-30% of their reads ending in adapters. Probably cut the DNA too short. Could consider in future iterations of class decreasing transposase time, increasing DNA input, or titrating Tn5 concentration to prevent tagmentation below 100bp. 
+Quality across reads:  
+Quality averaged per read: 
+Sequence bias: 
+GC content: 
+N content: 
+Seq length: 
+Seq duplication: 
+Adapter content:  
 
-**Samples that are a little wonky:**
-B04 - Weird GC content (%GC = 34% instead of 40%), very high duplication rate (20% of sequences are present 10-100 times)
-C04: Low sequencing depth. Just under 400k reads instead of 3M+. Primer contam? B10 is also a little low (800k reads)
+**Unusual samples, if any:**
 
---> Move forward with mapping! No need to trim reads or adapters, just one library of concern to keep our eye on (B04).
+--> Moving forward:
 
 # 2) Align to yeast genome
 
@@ -91,20 +89,18 @@ Summarize reports with MultiQC.
 
 ```{r, eval = F}
 
-# alignment.sh
+# script: alignment.sh
 
 #!/bin/bash
 #SBATCH --job-name=alignment
 #SBATCH -N 1
 #SBATCH -n 12
 
-# Define path to genome indices, downloaded from Bowtie2 website, Feb 2024
-  genome_index=/home/ltri/santoslab/smcclymo/MGY360/R64-1-1/R64-1-1 
-
+# Define path to genome indices, download from Bowtie2 website
+genome_index=
   
 for file in *R1_001.fastq.gz; do
 
-# Make life easier by making the file names simpler and into an extensionlesss variable
 # Remove the ends of the names 
 	sample=${file%_R1_001.fastq.gz}
 # Strip off the first 19 characters
@@ -113,17 +109,21 @@ for file in *R1_001.fastq.gz; do
 # Write out sample name so can track progress/errors in slurm.out file
   echo $sample2
 
-# Align with Bowtie2 v2.4.2
+# Align with Bowtie2 v2.5.4
+module load bowtie2/2.5.4
+
   # Local alignment to softclip the ends
   # Increase pair distance to 800
   # Write out alignment stats (stderr) to file for multiqc summary
   bowtie2 -p 12 --local -X 800 -x $genome_index -1 $file -2 ${sample}_R2_001.fastq.gz -S ${sample2}.sam 2>${sample2}.align.stats
 
-# Convert to bam and sort with samtools v1.11
+# Convert to bam and sort with samtools v1.22.1
+module load samtools/1.22.1
   # view -bu turns into uncompressed bam for easy piping into sort
   samtools view -bu ${sample2}.sam | samtools sort -o ${sample2}_sorted.bam
 
-# Deduplicate with picard tools v2.26.11
+# Deduplicate with picard tools v3.1.0
+module load picard/3.1.0
   picard MarkDuplicates I=${sample2}_sorted.bam O=${sample2}.bam M=${sample2}_markdup.stats
 
 # Index with samtools
@@ -146,14 +146,12 @@ Output: BAM and BAI files for each library. BAM files are sorted and duplicates 
 Output: Alignment stats for each library. Upload to GitHub.
 Output: MultiQC report (alignment_dups_multiqc_report.html) summarizing the alignment and deduplication stats. Look at this for problem libraries.
 
-% alignment: Pretty much all 95+% - there are 2 libraries of concern. One is B04, which was flagged above. 0% alignment. BLAST'ed some reads from that library - all staph. Another is E09, which has 61.1% alignment. Something funny with that library. Contamination? 
-
+**Conclusions:** 
+% alignment: 
 	Investigating: To get the unmapped reads use samtools (flag 4 = unmapped): samtools view -f 4 [file].bam > unmapped_reads_[sample].sam
-	Open the SAM file and copy some of the reads to send to BLAST. Not getting any matches. 
-	If I allow a lot of mismatches (discontiguous megablast), it actually matches with yeast??? 
-	Do notice: There's a LOT of repeats and N's. Sample bad? It looked fine in the FASTQC report, but this is telling a different story.... Not sure what's up. Move forward with the reads we've got, but keep an eye out. 	
-	
-% Duplication: Very little. All under 5% 
+	Open the SAM file and copy some of the reads to send to BLAST. 
+	Observations:
+% duplication: 
 
 # 3) Check alignment 
 	
@@ -162,16 +160,21 @@ Use Qualimap BAMQC (v2.3) and summarize with multiqc.
 
 ```{r, eval = F}
 
-# qualimap.sh
+# script: qualimap.sh
 
 #!/bin/bash
 #SBATCH --job-name=qualimap
+#SBATCH -N 
+#SBATCH -n 
+
+module load qualimap/2.3
 
 for file in *.bam; do
-# Use qualimap bamQC tool 
-# Make outdir called qualimap and make sure the format is HTML so multiqc can summarize properly. Can't read PDFs
 
-/home/ltri/santoslab/share/software/Qualimap/qualimap_v2.3/qualimap bamQC -bam $file -outdir ${file%.bam}_qualimap -outformat HTML -outfile ${file%.bam}_qualimap.report
+# Use qualimap bamQC tool 
+# Make outdir called qualimap and make sure the format is HTML so multiqc can summarize properly. Can't read PDFs.
+
+qualimap bamqc -bam $file -outdir ${file%.bam}_qualimap -outformat HTML -outfile ${file%.bam}_qualimap
 
 done
 
