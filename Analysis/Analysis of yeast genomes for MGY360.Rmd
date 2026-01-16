@@ -24,7 +24,7 @@ The general plan is to:
 
 ```{r, eval = F}
 
-# Files are located in /UofT/2026W/MGY360/2-Labs/DryLabs/SequencingData/Mutants
+# Files will be located in /home/micbmoe/
 # Files: 
 # 
 
@@ -191,7 +191,7 @@ Output: PDF reports for each library. Share with class.
 
 We need to identify all the variants in both the parental and mutant yeast strains. Eventually will compare the list and filter to only look at ones that are in the mutant, but to do that, we need the parental variation too. 
 
-Use bcftools mpileup and bcftools call (v1.9) to get a list of variant sites. 
+Use bcftools mpileup and bcftools call (v1.22) to get a list of variant sites. 
 
 ```{r, eval = F}
  
@@ -208,6 +208,8 @@ mv *.bam* ploidy1/
 #!/bin/bash
 #SBATCH --job-name=VCF
 
+module load bcftools/1.22
+
 for file in *.bam; do
 
 bcftools mpileup -f Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa $file -o ${file%.bam}.vcf
@@ -222,6 +224,8 @@ exit 0
 #!/bin/bash
 #SBATCH --job-name=VCF
 
+module load bcftools/1.22
+
 for file in *.bam; do
 
 bcftools mpileup -f Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa $file -o ${file%.bam}.vcf
@@ -231,10 +235,11 @@ done
 
 exit 0
 
-# Where the contents of teh ploidy2_file are: 
+# The ploidy2_file contents are: 
 #*  * *     * 2
 
-# Link the VCFs in a folder all together again (ln -s)
+# Link the VCFs in a folder all together again 
+ln -s
 
 # Fix the first column so that it isn't just "I" and "II" but is "chrI" and "chrII." 
 for file in *.vcf; do
