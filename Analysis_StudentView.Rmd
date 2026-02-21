@@ -1,0 +1,347 @@
+# Analysis of yeast genomes for 26W MGY360
+
+Morgan Alford (modified from Dr. Sarah McClymont)
+
+January 2026
+
+# Intro
+
+For the MGY360 class, we will generate Nextera DNA libraries (from caspofungin- or micafungin-resistant yeast strains) and sequence them. Our goal is to find the causative mutation(s) for the anti-fungal resistance and explore the mechanism behind that resistance.
+
+We will generate x sequencing libraries: y libraries of mutants, z libraries of their parents
+
+The general plan is to:
+
+1.  Perform quality control on the sequencing results
+
+2.  Align to a reference genome
+
+3.  Perform quality control on the alignment
+
+4.  Identify variants in mutant and parent strains compared to the reference
+
+5.  Filter the variants for presence/absence in parent vs mutant
+
+6.  Manually curate the list of variants to identify the most likely causative mutations
+
+7.  Perform literature searches to explore how these variants could be causing our phenotype of interest
+
+# The files
+
+```{r, eval = F}
+
+# Files will be located in /scratch/micbmoe/26W-MGY360/QueryStrains
+# Files: 
+Andrews_001_A01_Aya_1_S1_R1_001.fastq.gz
+Andrews_001_A01_Aya_1_S1_R2_001.fastq.gz
+Andrews_002_B01_Blanca_2_S2_R1_001.fastq.gz
+Andrews_002_B01_Blanca_2_S2_R2_001.fastq.gz
+Andrews_003_C01_Jacob_3_S3_R1_001.fastq.gz
+Andrews_003_C01_Jacob_3_S3_R2_001.fastq.gz
+Andrews_004_D01_Emily_4_S4_R1_001.fastq.gz
+Andrews_004_D01_Emily_4_S4_R2_001.fastq.gz
+Andrews_005_E01_Yuxin_6_S5_R1_001.fastq.gz
+Andrews_005_E01_Yuxin_6_S5_R2_001.fastq.gz
+Andrews_006_F01_Rachel_7_S6_R1_001.fastq.gz
+Andrews_006_F01_Rachel_7_S6_R2_001.fastq.gz
+Andrews_007_G01_Laeticia_8_S7_R1_001.fastq.gz
+Andrews_007_G01_Laeticia_8_S7_R2_001.fastq.gz
+Andrews_008_H01_Will_9_S8_R1_001.fastq.gz
+Andrews_008_H01_Will_9_S8_R2_001.fastq.gz
+Andrews_009_A02_Pouras_10_S9_R1_001.fastq.gz
+Andrews_009_A02_Pouras_10_S9_R2_001.fastq.gz
+Andrews_010_B02_Clarisse_11_S10_R1_001.fastq.gz
+Andrews_010_B02_Clarisse_11_S10_R2_001.fastq.gz
+Andrews_011_C02_Rawa_12_S11_R1_001.fastq.gz
+Andrews_011_C02_Rawa_12_S11_R2_001.fastq.gz
+Andrews_012_D02_Shannon_13_S12_R1_001.fastq.gz
+Andrews_012_D02_Shannon_13_S12_R2_001.fastq.gz
+Andrews_013_E02_Alicia_14_S13_R1_001.fastq.gz
+Andrews_013_E02_Alicia_14_S13_R2_001.fastq.gz
+Andrews_014_F02_Isabel_15_S14_R1_001.fastq.gz
+Andrews_014_F02_Isabel_15_S14_R2_001.fastq.gz
+Andrews_015_G02_YeFan_16_S15_R1_001.fastq.gz
+Andrews_015_G02_YeFan_16_S15_R2_001.fastq.gz
+Andrews_016_H02_Purav_17_S16_R1_001.fastq.gz
+Andrews_016_H02_Purav_17_S16_R2_001.fastq.gz
+Andrews_017_A03_Michael_18_S17_R1_001.fastq.gz
+Andrews_017_A03_Michael_18_S17_R2_001.fastq.gz
+Andrews_018_B03_Christina_19_S18_R1_001.fastq.gz
+Andrews_018_B03_Christina_19_S18_R2_001.fastq.gz
+Andrews_019_C03_ZhiHeng_20_S19_R1_001.fastq.gz
+Andrews_019_C03_ZhiHeng_20_S19_R2_001.fastq.gz
+Andrews_020_D03_Arthur_21_S20_R1_001.fastq.gz
+Andrews_020_D03_Arthur_21_S20_R2_001.fastq.gz
+Andrews_021_E03_Mackenzie_22_S21_R1_001.fastq.gz
+Andrews_021_E03_Mackenzie_22_S21_R2_001.fastq.gz
+Andrews_022_F03_Angela_23_S22_R1_001.fastq.gz
+Andrews_022_F03_Angela_23_S22_R2_001.fastq.gz
+Andrews_023_G03_Isabelle_24_S23_R1_001.fastq.gz
+Andrews_023_G03_Isabelle_24_S23_R2_001.fastq.gz
+Andrews_024_H03_Krystal_25_S24_R1_001.fastq.gz
+Andrews_024_H03_Krystal_25_S24_R2_001.fastq.gz
+Andrews_025_A04_Marina_26_S25_R1_001.fastq.gz
+Andrews_025_A04_Marina_26_S25_R2_001.fastq.gz
+Andrews_026_B04_Jocelyn_27_S26_R1_001.fastq.gz
+Andrews_026_B04_Jocelyn_27_S26_R2_001.fastq.gz
+Andrews_027_C04_Junhao_28_S27_R1_001.fastq.gz
+Andrews_027_C04_Junhao_28_S27_R2_001.fastq.gz
+Andrews_028_D04_Juliana_29_S28_R1_001.fastq.gz
+Andrews_028_D04_Juliana_29_S28_R2_001.fastq.gz
+Andrews_029_E04_Tiantian_30_S29_R1_001.fastq.gz
+Andrews_029_E04_Tiantian_30_S29_R2_001.fastq.gz
+Andrews_030_F04_Luke_31_S30_R1_001.fastq.gz
+Andrews_030_F04_Luke_31_S30_R2_001.fastq.gz
+Andrews_031_G04_Alisha_32_S31_R1_001.fastq.gz
+Andrews_031_G04_Alisha_32_S31_R2_001.fastq.gz
+Andrews_032_H04_Belin_33_S32_R1_001.fastq.gz
+Andrews_032_H04_Belin_33_S32_R2_001.fastq.gz
+Andrews_033_A05_Tigran_34_S33_R1_001.fastq.gz
+Andrews_033_A05_Tigran_34_S33_R2_001.fastq.gz
+Andrews_034_B05_Andres_35_S34_R1_001.fastq.gz
+Andrews_034_B05_Andres_35_S34_R2_001.fastq.gz
+Andrews_035_C05_Leonardo_36_S35_R1_001.fastq.gz
+Andrews_035_C05_Leonardo_36_S35_R2_001.fastq.gz
+Andrews_036_D05_Emily_37_S36_R1_001.fastq.gz
+Andrews_036_D05_Emily_37_S36_R2_001.fastq.gz
+Andrews_037_E05_Claudia_38_S37_R1_001.fastq.gz
+Andrews_037_E05_Claudia_38_S37_R2_001.fastq.gz
+Andrews_038_F05_Celine_39_S38_R1_001.fastq.gz
+Andrews_038_F05_Celine_39_S38_R2_001.fastq.gz
+Andrews_039_G05_Lexie_40_S39_R1_001.fastq.gz
+Andrews_039_G05_Lexie_40_S39_R2_001.fastq.gz
+
+
+```
+
+# 1) Pre-alignment QC
+
+Use FastQC to check library quality. Summarize FastQC reports with MultiQC and check the generated HTML for sequencing quality issues.
+
+```{r, eval = F}
+
+# batch script: fastqc.sh
+
+#!/bin/bash
+#SBATCH --job-name=fastqc
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=192
+#SBATCH --mail-type=all
+#SBATCH --time=4:00:00
+
+cd /scratch/micbmoe/26W-MGY360/QueryStrains
+
+module load StdEnv/2023
+module load fastqc/0.12.1
+
+# FastQC v0.12.1
+mkdir -p FastQC
+fastqc -t 192 -o FastQC *.fastq.gz
+
+# Generate report with MultiQC
+module load gcc arrow/22.0.0
+module load python/3.13.2
+
+pip3 install --user multiqc
+multiqc FastQC -o FastQC
+
+exit 0
+
+```
+
+Output: Individual FASTQC reports. Share with class on GitHub.
+
+Output: MultiQC report summary (fastQC_multiqc_report.html). Look at plots in the HTML to assess overall quality.
+
+**Conclusions:**
+
+Quality across reads: 1 sample with warning\
+Quality averaged per read: All passed
+
+Sequence bias: GGGGGGGGGGGGGGGGGG over represetation in 16 samples
+
+GC content: 18 samples with warnings, which may indicate contamination or some other bias
+
+N content: All passed
+
+Seq length: 151 bp uniformly
+
+Seq duplication: 43 samples passed, 33 samples with warnings, 2 samples (one pair of reads) failed (Celine). High amounts of duplication indicate contamination or over amplification.
+
+Adapter content: All but one pair of reads (Rachel) failed, indicating they contain adapter sequences or were contaminated with adapter dimers.. consider reducing tagmentation incubation time or cycle count
+
+**Unusual samples, if any:**
+
+--\> Moving forward: some samples with very low number of clusters PF to be mindful of: Michael, Juliana
+
+# 2) Align to yeast genome
+
+Use Bowtie2 to align to yeast genome. Deduplicate with Picard Tools. Index with SAMtools. Summarize reports with MultiQC.
+
+```{r, eval = F}
+
+# script: alignment2.sh
+
+#!/bin/bash
+#SBATCH --job-name=alignment
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=192
+#SBATCH --mail-type=all
+#SBATCH --time=4:00:00
+
+cd /scratch/micbmoe/26W-MGY360/QueryStrains
+
+OUTDIR="Alignment"
+mkdir -p ${OUTDIR}
+
+# Define path to genome indices, downloaded from Bowtie2 website
+genome_index=/scratch/micbmoe/26W-MGY360/Parentals/R64-1-1/R64-1-1
+  
+module load bowtie2/2.5.2
+module load samtools/1.18
+module load picard/3.1.0
+module load gcc/12.3
+module load arrow/22.0.0
+module load python/3.13.2
+
+pip3 install --user multiqc
+
+for file in *R1_001.fastq.gz; do
+    
+# Remove the ends of the names 
+        sample=${file%_R1_001.fastq.gz}
+    
+# Write out sample name so can track progress/errors in slurm.out file
+        echo "Processing $sample"
+
+  # Local alignment to softclip the ends
+  # Increase pair distance to 800
+  # Write out alignment stats (stderr) to file for multiqc summary
+        bowtie2 -p 192 --local -X 800 -x $genome_index -1 $file -2 ${sample}_R2_001.fastq.gz | awk 'BEGIN{OFS="\t"} /^@/ {print; next} length($10)==length($11) {print}' | samtools view -h -b -o ${OUTDIR}/${sample}.bam
+
+# Convert to bam and sort with samtools v1.22.1
+  # view -bu turns into uncompressed bam for easy piping into sort
+        samtools sort -o ${OUTDIR}/${sample}_sorted.bam ${OUTDIR}/${sample}.bam
+
+# Deduplicate with picard tools v3.1.0
+        java -jar $EBROOTPICARD/picard.jar MarkDuplicates I=${OUTDIR}/${sample}_sorted.bam O=${OUTDIR}/${sample}_markdup.bam M=${OUTDIR}/${sample}_markdup.stats
+
+# Index with samtools
+        samtools index ${OUTDIR}/${sample}_markdup.bam
+
+# Remove intermediate files
+	rm ${OUTDIR}/${sample}_sorted.bam ${OUTDIR}/${sample}.bam
+	
+done 
+
+# Summarize alignment stats with multiQC 
+multiqc ${OUTDIR} -o ${OUTDIR}
+
+exit 0	
+
+```
+
+Output: BAM and BAI files for each library. BAM files are sorted and duplicates have been flagged. BAIs are indices for visualization later. Figure out a way to upload these to UCSC so everyone has access to their tracks for looking at their variants. Too big for GitHub.
+
+Output: Alignment stats for each library. Upload to GitHub.
+
+Output: MultiQC report summarizing the alignment and de-duplication stats. Look at this for problem libraries.
+
+**Conclusions:**
+
+\% duplication: most libraries (all but 4) have \<16% duplication. Tigran, Claudia, Celine and Lexie are higher. Celine's the highest with 36.2% duplication.
+
+Noted that one library (Arthur's) did not align. Investigating.. according to the out file, Picard ran out of heap memory while building duplicate index structures. This could mean many duplicates. Re-running for this library with argument -Xmx8g for java (picard) function.
+
+# 3) Check alignment
+
+Look at the mapping quality distribution, fragment length distribution, and genome coverage for each library. Use Qualimap BAMQC (v2.3) and summarize with multiqc.
+
+```{r, eval = F}
+
+# script: qualimap.sh
+
+#!/bin/bash
+#SBATCH --job-name=qualimap
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=192
+#SBATCH --mail-type=all
+#SBATCH --time=4:00:00
+
+cd /scratch/micbmoe/26W-MGY360/QueryStrains
+
+module load StdEnv/2023
+module load qualimap/2.3
+module load gcc/12.3
+module load arrow/22.0.0
+module load python/3.13.2
+
+pip3 install --user multiqc
+
+for file in Alignment/*.bam; do
+
+# Use qualimap bamQC tool, making outdir called qualimap and make sure the report format is HTML so multiqc can summarize properly. Can't read PDFs.
+
+        qualimap bamQC -bam $file -nt 192 -outdir ${OUTDIR}/${file%.bam}_qualimap -outformat HTML -outfile ${file%.bam}_qualimap_report
+
+done
+
+# Summarize with multiQC
+multiqc ${OUTDIR} -o ${OUTDIR}
+
+exit 0
+
+```
+
+Output: PDF reports for each library. Share with class.
+
+# 4) Call variants
+
+We need to identify all the variants in both the parental and mutant yeast strains. Eventually will compare the list and filter to only look at ones that are in the mutant, but to do that, we need the parental variation too.
+
+Use bcftools mpileup and bcftools call (v1.22) to get a list of variant sites.
+
+```{r, eval = F}
+ 
+# This command relies on knowing the ploidy of the yeasts. 
+
+#!/bin/bash
+#SBATCH --job-name=VCF
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=12
+#SBATCH --mail-type=all
+#SBATCH --time=4:00:00
+cd /scratch/micbmoe/26W-MGY360/Parentals/QueryStrains
+
+OUTDIR="VCF"
+mkdir -p ${OUTDIR}
+
+module load StdEnv/2023
+module load gcc/12.3
+module load bcftools/1.22
+
+for file in Alignment/*.bam; do
+	bcftools mpileup -f /scratch/micbmoe/26W-MGY360/Parentals/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa -q 20 -Q 20 $file | bcftools call -m --ploidy 2 -O v -o ${OUTDIR}/${file%.bam}_vars.vcf
+done
+
+exit 0
+
+# Link the VCFs in a folder all together again 
+ln -s
+
+# Fix the first column so that it isn't just "I" and "II" but is "chrI" and "chrII." 
+for file in *.vcf; do
+# Starting at the 49th line, append "chr" to the front of each row
+awk 'NR>49 {print "chr"$0}' $file > intermediate.vcf
+# Add back in the header 
+head -n 48 $file > header.temp
+cat header.temp intermediate.vcf > ${file%_vars.vcf}.vcf
+done
+
+```
+
+Export the variant calls in VCF format. Upload to GitHub.
